@@ -30,7 +30,7 @@
 ;; ------------------------------------------------------------------------
 ;; Moving around
 ;; ------------------------------------------------------------------------
-(defun rr/move-other-window-nextline ()
+(defun rr/handpicking-nextline ()
   "Advances the point to next line in the next window."
   (interactive)
   (let (destw)
@@ -41,7 +41,7 @@
     (select-window destw)
     )
   )
-(defun rr/move-other-window-prevline ()
+(defun rr/handpicking-prevline ()
   "Moves the point to previous line in the next window."
   (interactive)
   (let (destw)
@@ -56,7 +56,7 @@
 ;; ------------------------------------------------------------------------
 ;; Copy sequentially
 ;; ------------------------------------------------------------------------
-(defun rr/copy-from-other-window-nextline ()
+(defun rr/handpicking-copy ()
   "Copies current line from next window to current point.
 Advances the point to next line in othe window."
   (interactive)
@@ -80,7 +80,7 @@ Advances the point to next line in othe window."
     )
   )
 
-(defun rr/pick-line-from-other-window (&optional count)
+(defun rr/handpicking-move (&optional count)
   "Moves current line from next window to current point.
 With argument 'count', moves that many lines."
   (interactive)
@@ -104,7 +104,7 @@ With argument 'count', moves that many lines."
 ;; ------------------------------------------------------------------------
 ;; Lookup patterns
 ;; ------------------------------------------------------------------------
-(defun rr/lookup-other-window (fwd)
+(defun rr/handpicking-lookup (fwd)
   "Locates in previous window the pattern currently highlighted
 in current window, or the word at point.
 With argument, search from current position."
