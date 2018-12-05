@@ -1,10 +1,10 @@
-#+TITLE: rr/chatting-windows layer
+#+TITLE: rr/handpicking layer
 #+HTML_HEAD_EXTRA: <link rel="stylesheet" type="text/css" href="../css/readtheorg.css" />
 
 #+CAPTION: logo
 
 # The maximum height of the logo should be 200 pixels.
-[[img/rr/chatting-windows.png]]
+[[img/rr/handpicking.png]]
 
 * Table of Contents                                        :TOC_4_org:noexport:
  - [[Description][Description]]
@@ -19,7 +19,7 @@ This layer does wonderful things:
 To use this contribution add it to your =~/.spacemacs=
 
 #+begin_src emacs-lisp
-  (setq-default dotspacemacs-configuration-layers '(rr/chatting-windows))
+  (setq-default dotspacemacs-configuration-layers '(rr/handpicking))
 #+end_src
 
 * Key bindings

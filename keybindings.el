@@ -1,4 +1,4 @@
-;;; keybindings.el --- rr/chatting-windows Layer key-bindings File
+;;; keybindings.el --- rr/handpicking Layer key-bindings File
 ;;
 ;; Copyright (c) 2016 Michelle Baert
 ;;
