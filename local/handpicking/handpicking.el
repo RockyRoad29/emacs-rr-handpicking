@@ -1,6 +1,7 @@
-;;; chatting-windows.el --- Some macros for working simultaneously in two or more windows.
+;;; handpicking.el --- Some tools for working with a reference buffer
+;;                     associated with current buffer.
 
-;; Copyright (C) 2008  Michelle Baert
+;; Copyright (C) 2018  Michelle Baert
 
 ;; Author: Michelle Baert <m dot baert at free dot fr>
 ;; Keywords:
@@ -20,7 +21,7 @@
 ;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 ;; Boston, MA 02110-1301, USA.
 
-;;; Commentary:
+;;; Commentary: Complete rewrite of "rr/chatting-windows"
 
 ;;
 
@@ -28,78 +29,138 @@
 
 
 ;; ------------------------------------------------------------------------
+;; setup
+;; ------------------------------------------------------------------------
+;; Make variables automatically buffer-local
+(make-variable-buffer-local 'rr/handpicking-source-buffer)
+(make-variable-buffer-local 'rr/handpicking-source-window)
+;; the only way to change them is #'setq-default
+;; (setq-default rr/handpicking-source-buffer nil)
+
+
+(defun rr/handpicking-set-source-buffer (buf)
+  "Defines or redefines the source buffer to use for
+handpicking to current buffer.
+
+This is a convenience interactive function setting the
+buffer-local variable 'rr/handpicking-source-buffer
+"
+  ;; (interactive "b")
+  (interactive
+   (list (ido-read-buffer "Switch to buffer: ")))
+  (setq rr/handpicking-source-buffer (get-buffer buf))
+  )
+
+(defun rr/handpicking-get-source-buffer ()
+  "Retrieves the current value of the
+buffer-local variable 'rr/handpicking-source-buffer,
+checks if it is valid and selects it.
+Otherwise, emit a suitable error message for the user.
+
+You'll probably want to wrap call in a 'save-excursion context,
+to be able to later come back and keep working in your
+current (destination) buffer.
+
+Returns:
+   - the buffer on success,
+   - nil on failure.
+"
+  (let (
+        (buf rr/handpicking-source-buffer)
+        destw
+        )
+    (if (and buf (bufferp buf))
+        (progn
+          (setq rr/handpicking-source-window   ; display-buffer returns the window
+                (display-buffer
+                 buf
+                 '(display-buffer-reuse-window . ((inhibit-same-window . t)))
+                 ))
+          buf)
+      ;; else: inform user and return nil
+      (message "No source buffer defined for %s, call (rr/handpicking-set-source-buffer) to set it."
+               (current-buffer))
+      nil
+      ))
+  )
+;; ------------------------------------------------------------------------
 ;; Moving around
 ;; ------------------------------------------------------------------------
 (defun rr/handpicking-nextline ()
   "Advances the point to next line in the next window."
   (interactive)
-  (let (destw)
-    (setq destw (selected-window))
-    (setq otherw (next-window))
-    (select-window (next-window))
-    (forward-line)
-    (select-window destw)
-    )
+  (save-excursion
+    (let (
+          (dstw (selected-window))
+          (srcw rr/handpicking-source-window) ; remember those are buffer-local
+          (src (rr/handpicking-get-source-buffer))
+          )
+      (when src (with-current-buffer src
+                  (forward-line)
+                  (message "Handpiking: Source point is now %s in buffer %s" (point) (current-buffer))
+                  (set-window-point srcw (point))
+                  (message "Handpiking: Window point is now %s in window %s"
+                           (window-point srcw)
+                           srcw
+                           )
+                  ))
+      (select-window dstw)
+      ))
   )
 (defun rr/handpicking-prevline ()
   "Moves the point to previous line in the next window."
   (interactive)
-  (let (destw)
-    (setq destw (selected-window))
-    (setq otherw (next-window))
-    (select-window (next-window))
-    (forward-line -1)
-    (select-window destw)
-    )
+  ;; (save-excursion
+  (let (
+        (buf (rr/handpicking-get-source-buffer))
+        (srcw rr/handpicking-source-window)
+        )
+      (when buf (with-current-buffer buf
+                  (forward-line -1)
+                  (set-window-point srcw (point))
+                  )))
+    ;;)
   )
 
 ;; ------------------------------------------------------------------------
 ;; Copy sequentially
 ;; ------------------------------------------------------------------------
 (defun rr/handpicking-copy ()
-  "Copies current line from next window to current point.
-Advances the point to next line in othe window."
+  "Copies current line from source buffer to current point.
+Advances the point to next line in source buffer."
   (interactive)
-  (let (
-	(line "")
-	(destw)
-	(otherw)
-	)
-    (setq destw (selected-window))
-    (setq otherw (next-window))
-    (message "coping next line from %s to %s" otherw destw)
-    (select-window otherw)
-    (beginning-of-line); (setq start (point))
-    (setq line (thing-at-point 'line))
-;    (message line)
-    (forward-line); (setq end (point))
-    ;(setq line (buffer-substring start end))
-
-    (select-window destw)
-    (insert line)
-    )
+  (save-excursion
+    (let (
+          (buf (rr/handpicking-get-source-buffer))
+          line )
+      (when buf (with-current-buffer buf
+                  (beginning-of-line)
+                  (setq line (thing-at-point 'line))
+                  (forward-line)
+                  )
+            (beginning-of-line)
+            (insert line)
+            )
+      ))
   )
 
 (defun rr/handpicking-move (&optional count)
-  "Moves current line from next window to current point.
-With argument 'count', moves that many lines."
+  "Moves current line from source-buffer to current point.
+With argument 'count', moves that many lines at once."
   (interactive)
   (if (null count) (setq count 1))
-  (let (
-	(destw)
-	(otherw)
-	)
-    (setq destw (selected-window))
-    (setq otherw (next-window))
-    (message "moving next line from %s to %s" otherw destw)
-    (save-excursion
-      (select-window otherw)
-      (beginning-of-line); (setq start (point))
-      (kill-line count)                   ; whole line, since count is supplied
-      (select-window destw)
-      )
-    (yank)
-    )
+  (save-excursion
+    (let (
+          (buf (rr/handpicking-get-source-buffer))
+          line )
+      (when buf (with-current-buffer buf
+                  (beginning-of-line)
+                  (kill-line count)                   ; whole line, since count is supplied
+                  )
+            (beginning-of-line)
+            (yank)
+            )
+      ))
   )
 ;; ------------------------------------------------------------------------
 ;; Lookup patterns
@@ -109,37 +170,40 @@ With argument 'count', moves that many lines."
 in current window, or the word at point.
 With argument, search from current position."
   (interactive "P")                     ; optional prefix argument (C-u)
-  (let (
-        (pattern                        ; what we are looking for
-         (if mark-active
-             (buffer-substring (region-beginning) (region-end))
-           (current-word)
-           ))
-        pt                              ; save point in other window
-        fnd                             ; found pattern position
-        )
-;    (message "looking for pattern '%s'" pattern)
-    (select-window (previous-window))
-    ;; error handling
-    (condition-case err
-        (progn
-          (setq pt (point))
-          (cond
-           ((integerp fwd) (goto-char fwd)) ; search from specified position
-           (fwd (goto-char (point-min)))    ; search from the beginning
-           )
-          (if (setq fnd (word-search-forward pattern nil 1))
-              (message "'%s' found line %d" pattern (line-number-at-pos))
-            (progn (message "'%s' not found" pattern )
-                   (goto-char pt)             ; restore previous point
-                   ))
+  (save-excursion
+    (let (
+          (pattern                        ; what we are looking for
+           (if mark-active
+               (buffer-substring (region-beginning) (region-end))
+             (current-word)
+             ))
+          pt                              ; save point in other window
+          fnd                             ; found pattern position
+          (buf (rr/handpicking-get-source-buffer))
           )
-      (error
-       (message (error-message-string err))
-       ))
-    (select-window (next-window))       ; restore window
-    ))
+      ;;    (message "looking for pattern '%s'" pattern)
+      (when buf
+        (with-current-buffer buf
+          ;; error handling: Regain control when an error is signaled.
+          (condition-case err
+              (progn
+                (setq pt (point))
+                (cond
+                 ((integerp fwd) (goto-char fwd)) ; search from specified position
+                 (fwd (goto-char (point-min)))    ; search from the beginning
+                 )
+                (if (setq fnd (word-search-forward pattern nil 1))
+                    (message "'%s' found line %d" pattern (line-number-at-pos))
+                  (progn (message "'%s' not found" pattern )
+                         (goto-char pt)             ; restore previous point
+                         ))
+                )
+            (error
+             (message (error-message-string err))
+             ))
+          ))
+      ))
+  )
 
-
-(provide 'chatting-windows)
-;;; chatting-windows.el ends here
+(provide 'rr/handpicking)
+;;; handpicking.el ends here

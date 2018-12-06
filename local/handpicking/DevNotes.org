@@ -1,0 +1,148 @@
+
+#+TITLE: handpicking - Working with a reference buffer associated with current buffer
+#+SUBTITLE: Development notes
+
+#+PROPERTY: header-args  :results drawer
+#+PROPERTY: header-args:elisp  :results value drawer
+
+* DONE Defining the reference buffer
+  CLOSED: [2018-12-06 Thu 10:06]
+
+  - buffer-local variable : help:rr/handpicking--source-buffer
+  - helper function :  help:rr/handpicking-set-source-buffer
+* TODO Saving context
+  - help:with-current-buffer
+  - help:with-current-buffer-window
+    Maybe overkill
+
+** Manipulating windows directly
+
+in rr/chatting-windows , I used forms like:
+#+BEGIN_SRC elisp
+  (let (destw)
+    (setq destw (selected-window))
+    (setq otherw (next-window))
+    (select-window (next-window))
+    (forward-line)
+    (select-window destw)
+    )
+#+END_SRC
+
+:Note: usage of help:next-window may be discussed in next section.
+:end:
+
+Although the usage of "free variable" 'otherw doesn't look right
+(should be easy to fix), this solution is simple, easy to read,
+ and probably very portable.
+
+* DONE [1/1] Activating the reference buffer
+  CLOSED: [2018-12-06 Thu 13:40]
+** DONE [4/4] Make sure both source and destination buffers are displayed
+   CLOSED: [2018-12-06 Thu 13:40]
+*** DONE Retrieve window displaying source buffer
+    CLOSED: [2018-12-06 Thu 13:40]
+    - help:get-buffer-window
+#+BEGIN_SRC elisp
+  (list
+   (get-buffer-window "*scratch*")
+   (get-buffer-window "handpicking.el")
+   )
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+(nil #<window 126 on handpicking.el>)
+:END:
+
+*** DONE Displaying source buffer in an existing window
+    CLOSED: [2018-12-06 Thu 13:39]
+**** Using cyclic window ordering (next- previous- other-window)
+
+     [[info:elisp#Cyclic%20Window%20Ordering][info:elisp#Cyclic Window Ordering]]
+     This is what was used in 'rr/chatting-windows, rather satisfactory.
+#+BEGIN_SRC elisp
+  (list
+   (previous-window)
+   (next-window)
+   )
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+(#<window 176 on *Help*> #<window 126 on handpicking.el>)
+:END:
+
+**** reusing window
+   - help:display-buffer
+   - help:display-buffer-reuse-window
+: (not (cdr (assq 'inhibit-same-window alist))))
+#+BEGIN_SRC elisp
+  (let (
+        (wrk-w (selected-window))
+        (wtd-buf "window.el.gz")
+        destw
+        rslt
+        )
+    (setq destw                           ; display-buffer returns the window
+          (display-buffer
+           wtd-buf
+           '(display-buffer-reuse-window . ((inhibit-same-window . t)))
+           )
+
+          rslt                            ; user input to pause in current state
+           (list destw
+                 (y-or-n-p (format "Can you see '%s' ?" wtd-buf)))
+           )
+    (select-window wrk-w)                 ; re-select initial window
+    rslt
+    )
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+(#<window 126 on window.el.gz> t)
+:END:
+
+So this works nearly as expected:
+  - the desired buffer is displayed in next-window,
+  - but afterwards comes back to initial window configuration.
+    This might well be attributed to org-babel wrapper.
+*** DONE Displaying source buffer in a new window
+    CLOSED: [2018-12-06 Thu 13:39]
+
+**** window "action" argument
+Used in many window selection function, like help:display-buffer
+
+I found it a bit tricky to get the right syntac, but I eventually solved it in above section:
+
+Exerpt, explained:
+#+BEGIN_SRC elisp :eval never
+  (display-buffer
+       wtd-buf                            ; the BUFFER-OR-NAME to display
+       '(                                 ; the optional ACTION argument: quoted list
+         display-buffer-reuse-window      ; the function symbol
+         .
+         (                                ; the ALIST argument
+          (inhibit-same-window . t)       ; an entry of the action alist
+          )
+         )                                ; end of ACTION
+       )
+#+END_SRC
+**** window purpose layer
+Automatically overrides high-level functions like help:pop-to-buffer.
+
+   - help:purpose-pop-to-buffer-advice
+#+BEGIN_QUOTE
+If Purpose is active (‘purpose--active-p’ is non-nil) and ACTION is nil,
+call ‘purpose-pop-buffer’, otherwise call ‘pop-to-buffer’.
+#+END_QUOTE
+   - help:purpose-pop-buffer
+
+*** DONE Make the point visible in source window
+    CLOSED: [2018-12-06 Thu 13:39]
+#+BEGIN_SRC elisp :eval never
+  (with-current-buffer src-buf
+    (forward-line -1)
+    (set-window-point src-win (point))
+    )
+#+END_SRC
