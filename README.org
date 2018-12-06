@@ -1,10 +1,12 @@
 #+TITLE: rr/handpicking layer
 #+HTML_HEAD_EXTRA: <link rel="stylesheet" type="text/css" href="../css/readtheorg.css" />
 
+#+BEGIN_COMMENT
 #+CAPTION: logo
 
 # The maximum height of the logo should be 200 pixels.
 [[img/rr/handpicking.png]]
+#+END_COMMENT
 
 * Table of Contents                                        :TOC_4_org:noexport:
 - [[Description][Description]]
