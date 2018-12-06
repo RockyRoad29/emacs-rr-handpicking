@@ -146,3 +146,6 @@ call ‘purpose-pop-buffer’, otherwise call ‘pop-to-buffer’.
     (set-window-point src-win (point))
     )
 #+END_SRC
+
+:Note: When the window is selected,
+       window point automatically follows buffer point.
