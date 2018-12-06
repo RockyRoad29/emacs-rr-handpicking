@@ -7,23 +7,101 @@
 [[img/rr/handpicking.png]]
 
 * Table of Contents                                        :TOC_4_org:noexport:
- - [[Description][Description]]
- - [[Install][Install]]
- - [[Key bindings][Key bindings]]
+- [[Description][Description]]
+- [[Install][Install]]
+  - [[As a layer in spacemacs][As a layer in spacemacs]]
+  - [[As a simple emacs package][As a simple emacs package]]
+- [[Usage][Usage]]
+  - [[First define the reference buffer][First define the reference buffer]]
+  - [[Moving around reference buffer][Moving around reference buffer]]
+  - [[Moving text from one window to another][Moving text from one window to another]]
+- [[Key bindings][Key bindings]]
 
 * Description
-This layer does wonderful things:
-  - thing01
+This layer is basically a wrapper for the =rr/handpicking= package, with
+separated keybindings file.
+
+It is designed to help taking personal notes while reading a reference document,
+which may be read-only.
+
+It can also be used to reorganize a document, by moving sections of text from
+source to destination buffers, or more generally, editing windows.
 
 * Install
+** As a layer in spacemacs
 To use this contribution add it to your =~/.spacemacs=
 
 #+begin_src emacs-lisp
   (setq-default dotspacemacs-configuration-layers '(rr/handpicking))
 #+end_src
 
-* Key bindings
+** As a simple emacs package
+   Straightforward as there is no dependency to spacemacs at this stage.
 
-| Key Binding     | Description    |
-|-----------------+----------------|
-| ~<SPC> x x x~   | Does thing01   |
+ Load
+  - file:local/handpicking/handpicking.el
+  - file:keybindings.el
+* Usage
+** First define the reference buffer
+From your destination buffer, call help:rr/handpicking-set-source-buffer
+
+You'll be prompted to select a buffer by name, which is going to be the source
+or reference buffer associated with current buffer.
+
+Defines or redefines the source buffer to use for
+handpicking to current buffer.
+
+This is a convenience interactive function setting the
+buffer-local variable help:rr/handpicking-source-buffer
+
+This setting will be valid as long as your destination file is loaded in
+emacs (or more precisely while your current buffer is alive).
+
+:Note: It could default to help:other-buffer , but I think it is safer to let
+the user be explicit about that. For the same reason, no key-binding is
+attributed to this function.
+:end:
+
+When later using other functions of the handpicking module, this buffer will
+be popped up in a window next to the one you're working in, without apparently
+leaving it.
+** Moving around reference buffer
+
+You can move up and down your reference window by keeping [Ctrl+Shift] keys
+pressed, and using up and down arrows to move one line at a time.
+
+  - help:rr/handpicking-nextline
+  - help:rr/handpicking-prevline
+
+You can also directly jump to a specific word or pattern, see
+  - help:rr/handpicking-lookup
+
+** Moving text from one window to another
+
+See
+  - help:rr/handpicking-move
+
+* Key bindings
+They are chosen for their proximity on my keyboard layout (UK).
+
+| Key Binding  | Function                    | Description                                                         |
+|--------------+-----------------------------+---------------------------------------------------------------------|
+| ~[C-S-down]~ | =#'rr/handpicking-nextline= | Move down one line in reference buffer                              |
+| ~[C-S-up]~   | =#'rr/handpicking-prevline= | Move up one line in reference buffer                                |
+| ~[M-S-up]~   | =#'rr/handpicking-lookup=   | Lookup for pattern in reference buffer                              |
+| ~[C-@])~     | =#'rr/handpicking-copy=     | Copy one line from source to current buffer. This is also ~[C-S-']~ |
+| ~[C-M-'])~   | =#'rr/handpicking-move=     | Move one or several lines from source to current buffer             |
+
+
+On US keyboard, =#'rr/handpicking-copy= would be bound to ~[C-"]~, but I haven't
+checked if the syntax is valid.
+
+If you use french keyboard layout (azerty), the same keys locations would be :
+| ~[C-µ]~   | =#'rr/handpicking-copy= | that is C-S-* |
+| ~[C-M-*]~ | =#'rr/handpicking-move= |               |
+
+
+:Note:
+~[C-S-down]~ and ~[C-S-up]~ are included in org-mode keymap, but not used.
+
+A simple hook make them available for /handpicking/ package.

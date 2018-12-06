@@ -89,7 +89,7 @@ Returns:
 ;; Moving around
 ;; ------------------------------------------------------------------------
 (defun rr/handpicking-nextline ()
-  "Advances the point to next line in the next window."
+  "Advances the point to next line in the reference window."
   (interactive)
   (let (
         (dstw (selected-window))
@@ -101,7 +101,7 @@ Returns:
       ))
   )
 (defun rr/handpicking-prevline ()
-  "Moves the point to previous line in the next window."
+  "Moves the point to previous line in the reference window."
   (interactive)
   (let (
         (dstw (selected-window))
@@ -163,7 +163,7 @@ With argument 'count', moves that many lines at once."
 ;; Lookup patterns
 ;; ------------------------------------------------------------------------
 (defun rr/handpicking-lookup (fwd)
-  "Locates in previous window the pattern currently highlighted
+  "Locates in reference window the pattern currently highlighted
 in current window, or the word at point.
 With argument, search from current position."
   (interactive "P")                     ; optional prefix argument (C-u)
